@@ -3,12 +3,13 @@
 // LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include "boost/asio.hpp"
+#include "boost/lexical_cast.hpp"
 #include <string>
 #include <vector>
 #include <iterator>
 
 namespace memcachedcpp { namespace detail {
-    
+
     constexpr const char* linefeed() {
         return "\r\n";
     }
@@ -25,35 +26,89 @@ namespace memcachedcpp { namespace detail {
         return 5;
     }
 
+    constexpr const char* sucess_status() {
+        return "STORED";
+    }
+
     inline int encode_get(std::string key, std::vector<char>& buffer) {
-        static const std::string get = "get ";
-        static const std::string end = " \r\n";
-        auto size = get.size() + key.size() + end.size();
+        constexpr const char* get = "get ";
+        auto size = 4 + key.size() + 3;
 
         buffer.clear();
         buffer.reserve(size);
 
-        std::copy(get.begin(), get.end(), std::back_inserter(buffer));
+        std::copy(get, get + 4, std::back_inserter(buffer));
         std::copy(key.begin(), key.end(), std::back_inserter(buffer));
-        std::copy(end.begin(), end.end(), std::back_inserter(buffer));
+        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
+
         return size;
     }  
 
-    template<typename Datatype, typename std::enable_if<std::is_same<std::string, Datatype>::value, int>::type = 0>
-    Datatype decode_get(boost::asio::streambuf& buffer, std::size_t bytes) {
+    template<typename Datatype>
+    void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, Datatype& output) {
+        static_assert(true, "shouldn't be here yet");
+    }
+
+    void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, std::string& output) {
         std::istream is(&buffer);
-        std::string data(bytes - endmarker_length(), '\0');
-        std::getline(is, data);
+
+        // element not found
+        if(bytes == endmarker_length()) {
+            is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            return;
+        }
+
+        std::string dummy_extractor; // used to get the size of the get response header
+        std::getline(is, dummy_extractor);
         /* from bytes we subtract:
-        * - headersize: data.size()
-        * - 1: for \n after header which is not in data.size()
-        * - linefeed_length: linefeed after data block
+        * - headersize: output.size()
+        * - 1: for \n after header which is not in output.size()
+        * - linefeed_length: linefeed after output block
         * - endmarker_length: length of endmarker
         */
-        auto data_size = bytes - data.size() - 1 - linefeed_length() - endmarker_length();
-        is.read(&data[0], data_size);
-        is.seekg(endmarker_length(), std::ios_base::cur);
-        data.resize(data_size);
-        return data;
+        auto data_size = bytes - dummy_extractor.size() - 1 - linefeed_length() - endmarker_length();
+        output.resize(data_size);
+        is.read(&output[0], data_size);
+        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+
+    template<typename Datatype>
+    void encode_store(const char* command, const std::size_t command_length, 
+            const std::string& key, const Datatype& value, 
+            std::size_t timeout, std::vector<char>& buffer) 
+    {
+        static_assert(true, "shouldn't be here");
+    }
+
+    inline void encode_store(const char* command, const std::size_t command_length, 
+            const std::string& key, const std::string& value, 
+            std::size_t timeout, std::vector<char>& buffer) 
+    {
+        constexpr const char* flags = "0";
+        auto timeout_str = boost::lexical_cast<std::string>(timeout);
+        auto data_length = boost::lexical_cast<std::string>(value.length());
+
+        buffer.clear();
+
+        std::copy(command, command + command_length, std::back_inserter(buffer));
+        buffer.push_back(' ');
+        std::copy(key.begin(), key.end(), std::back_inserter(buffer));
+        buffer.push_back(' ');
+        std::copy(flags, flags + 1, std::back_inserter(buffer));
+        buffer.push_back(' ');
+        std::copy(timeout_str.begin(), timeout_str.end(), std::back_inserter(buffer));
+        buffer.push_back(' ');
+        std::copy(data_length.begin(), data_length.end(), std::back_inserter(buffer));
+        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
+        std::copy(value.begin(), value.end(), std::back_inserter(buffer));
+        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
+    }
+
+    inline std::string decode_store(boost::asio::streambuf& buffer, std::size_t bytes_read) {
+        std::istream is(&buffer);
+        std::string status(bytes_read - linefeed_length(), 'b');
+        is.read(&status[0], bytes_read - linefeed_length());
+        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        return status;
     }
 }}

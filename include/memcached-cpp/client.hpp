@@ -8,6 +8,9 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <stdexcept>
+#include <iostream>
+#include <iterator>
 
 namespace memcachedcpp {
     template<typename Datatype>
@@ -26,17 +29,25 @@ namespace memcachedcpp {
             boost::asio::connect(socket, endpoint_iter);
         }
 
-        std::string set(const std::string& key, Datatype value) {
-            // boost::asio::write(socket, boost::asio::buffer());
-            // boost::asio::read_until(socket, set_response_buffer, detail::endmarker());
-            // return ret;
+        void set(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
+            detail::encode_store("set", 3, key, value, timeout, set_request_buffer);
+            boost::asio::write(socket, boost::asio::buffer(set_request_buffer, set_request_buffer.size()));
+            auto bytes_read = boost::asio::read_until(socket, set_response_buffer, detail::linefeed());
+            auto status = detail::decode_store(set_response_buffer, bytes_read);
+
+            if(status != detail::sucess_status()) {
+                throw std::runtime_error(status);
+            }            
         }
 
         Datatype get(const std::string& key) {
             auto request_length = detail::encode_get(key, get_request_buffer);
             boost::asio::write(socket, boost::asio::buffer(get_request_buffer, request_length));
             auto bytes_read = boost::asio::read_until(socket, get_response_buffer, detail::endmarker());
-            return detail::decode_get<Datatype>(get_response_buffer, bytes_read);
+            
+            Datatype ret;
+            detail::decode_get(get_response_buffer, bytes_read, ret);
+            return ret;
         }
 
     private:
