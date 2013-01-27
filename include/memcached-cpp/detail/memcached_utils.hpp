@@ -77,7 +77,7 @@ namespace memcachedcpp { namespace detail {
             const std::string& key, const Datatype& value, 
             std::size_t timeout, std::vector<char>& buffer) 
     {
-        static_assert(true, "shouldn't be here");
+        static_assert(true, "shouldn't be here yet");
     }
 
     inline void encode_store(const char* command, const std::size_t command_length, 
@@ -106,7 +106,7 @@ namespace memcachedcpp { namespace detail {
 
     inline std::string decode_store(boost::asio::streambuf& buffer, std::size_t bytes_read) {
         std::istream is(&buffer);
-        std::string status(bytes_read - linefeed_length(), 'b');
+        std::string status(bytes_read - linefeed_length(), '\0');
         is.read(&status[0], bytes_read - linefeed_length());
         is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         return status;
