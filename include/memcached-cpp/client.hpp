@@ -45,7 +45,7 @@ namespace memcachedcpp {
             boost::asio::write(socket, boost::asio::buffer(get_request_buffer, request_length));
             auto bytes_read = boost::asio::read_until(socket, get_response_buffer, detail::endmarker());
             
-            Datatype ret;
+            Datatype ret{};
             detail::decode_get(get_response_buffer, bytes_read, ret);
             return ret;
         }

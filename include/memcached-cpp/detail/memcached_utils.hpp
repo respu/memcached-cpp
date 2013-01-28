@@ -4,6 +4,8 @@
 
 #include "boost/asio.hpp"
 #include "boost/lexical_cast.hpp"
+#include "boost/archive/text_iarchive.hpp"
+#include "boost/archive/text_oarchive.hpp"
 #include <string>
 #include <vector>
 #include <iterator>
@@ -44,10 +46,6 @@ namespace memcachedcpp { namespace detail {
         return size;
     }  
 
-    template<typename Datatype>
-    void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, Datatype& output) {
-        static_assert(true, "shouldn't be here yet");
-    }
 
     void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, std::string& output) {
         std::istream is(&buffer);
@@ -69,16 +67,24 @@ namespace memcachedcpp { namespace detail {
         auto data_size = bytes - dummy_extractor.size() - 1 - linefeed_length() - endmarker_length();
         output.resize(data_size);
         is.read(&output[0], data_size);
-        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // \r\n after data
+        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // END\r\n 
     }
 
     template<typename Datatype>
-    void encode_store(const char* command, const std::size_t command_length, 
-            const std::string& key, const Datatype& value, 
-            std::size_t timeout, std::vector<char>& buffer) 
-    {
-        static_assert(true, "shouldn't be here yet");
+    void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, Datatype& output) {
+        std::string raw_data;
+        decode_get(buffer, bytes, raw_data);
+
+        if(raw_data.empty()) {
+            return;
+        }
+
+        std::stringstream ss(raw_data);
+        boost::archive::text_iarchive ia(ss);
+        ia >> output;
     }
+
 
     inline void encode_store(const char* command, const std::size_t command_length, 
             const std::string& key, const std::string& value, 
@@ -102,6 +108,19 @@ namespace memcachedcpp { namespace detail {
         std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
         std::copy(value.begin(), value.end(), std::back_inserter(buffer));
         std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
+    }
+
+
+    template<typename Datatype>
+    void encode_store(const char* command, const std::size_t command_length, 
+            const std::string& key, const Datatype& value, 
+            std::size_t timeout, std::vector<char>& buffer) 
+    {
+        std::ostringstream ss;
+        boost::archive::text_oarchive oa(ss);
+        oa << value;
+
+        encode_store(command, command_length, key, ss.str(), timeout, buffer);
     }
 
     inline std::string decode_store(boost::asio::streambuf& buffer, std::size_t bytes_read) {
