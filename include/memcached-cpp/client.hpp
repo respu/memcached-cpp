@@ -43,10 +43,28 @@ namespace memcachedcpp {
         Datatype get(const std::string& key) {
             auto request_length = detail::encode_get(key, get_request_buffer);
             boost::asio::write(socket, boost::asio::buffer(get_request_buffer, request_length));
-            auto bytes_read = boost::asio::read_until(socket, get_response_buffer, detail::endmarker());
             
             Datatype ret{};
-            detail::decode_get(get_response_buffer, bytes_read, ret);
+
+            while(true) {
+                auto bytes_read = boost::asio::read_until(socket, get_response_buffer, detail::linefeed());
+
+                if(bytes_read == detail::endmarker_length()) { // no results found
+                    std::istream is(&get_response_buffer);
+                    is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                    break;
+                }
+
+                auto data_size = detail::extract_datasize(get_response_buffer);
+
+                boost::asio::read(socket, get_response_buffer, 
+                    [&] (const boost::system::error_code&, std::size_t bytes_transfered) -> bool {
+                        return bytes_transfered <= data_size;
+                    });
+                
+                detail::decode_get(get_response_buffer, data_size, ret);
+            }
+
             return ret;
         }
 

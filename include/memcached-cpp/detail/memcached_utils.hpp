@@ -32,6 +32,15 @@ namespace memcachedcpp { namespace detail {
         return "STORED";
     }
 
+    inline std::size_t extract_datasize(boost::asio::streambuf& buffer) {
+        std::string str;
+        std::istream is(&buffer);
+        std::getline(is, str);
+        auto data_size_begin_pos = str.rfind(' ') + 1;
+        std::string data_size(str.begin() + data_size_begin_pos, str.end() - 1); // -1 for \r
+        return boost::lexical_cast<std::size_t>(data_size);
+    }
+
     inline int encode_get(std::string key, std::vector<char>& buffer) {
         constexpr const char* get = "get ";
         auto size = 4 + key.size() + 3;
@@ -47,28 +56,11 @@ namespace memcachedcpp { namespace detail {
     }  
 
 
-    void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, std::string& output) {
+    void decode_get(boost::asio::streambuf& buffer, std::size_t data_size, std::string& output) {
         std::istream is(&buffer);
-
-        // element not found
-        if(bytes == endmarker_length()) {
-            is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            return;
-        }
-
-        std::string dummy_extractor; // used to get the size of the get response header
-        std::getline(is, dummy_extractor);
-        /* from bytes we subtract:
-        * - headersize: output.size()
-        * - 1: for \n after header which is not in output.size()
-        * - linefeed_length: linefeed after output block
-        * - endmarker_length: length of endmarker
-        */
-        auto data_size = bytes - dummy_extractor.size() - 1 - linefeed_length() - endmarker_length();
         output.resize(data_size);
         is.read(&output[0], data_size);
-        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // \r\n after data
-        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // END\r\n 
+        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
     template<typename Datatype>
