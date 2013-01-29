@@ -46,24 +46,7 @@ namespace memcachedcpp {
             
             Datatype ret{};
 
-            while(true) {
-                auto bytes_read = boost::asio::read_until(socket, get_response_buffer, detail::linefeed());
-
-                if(bytes_read == detail::endmarker_length()) { // no results found
-                    std::istream is(&get_response_buffer);
-                    is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-                    break;
-                }
-
-                auto data_size = detail::extract_datasize(get_response_buffer);
-
-                boost::asio::read(socket, get_response_buffer, 
-                    [&] (const boost::system::error_code&, std::size_t bytes_transfered) -> bool {
-                        return bytes_transfered <= data_size;
-                    });
-                
-                detail::decode_get(get_response_buffer, data_size, ret);
-            }
+            while(get_one(ret)) {}
 
             return ret;
         }
@@ -79,5 +62,25 @@ namespace memcachedcpp {
 
         std::vector<char> set_request_buffer;
         boost::asio::streambuf set_response_buffer;
+
+        bool get_one(Datatype& data) {
+            auto bytes_read = boost::asio::read_until(socket, get_response_buffer, detail::linefeed());
+
+            if(bytes_read == detail::endmarker_length()) { // no results found
+                std::istream is(&get_response_buffer);
+                is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                return false;
+            }
+
+            auto data_size = detail::extract_datasize(get_response_buffer);
+
+            boost::asio::read(socket, get_response_buffer, 
+                [&] (const boost::system::error_code&, std::size_t bytes_transfered) -> bool {
+                    return bytes_transfered <= data_size;
+                });
+                
+            detail::decode_get(get_response_buffer, data_size, data);    
+            return true;
+        }
     };
 }
