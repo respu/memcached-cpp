@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <iterator>
+#include <tuple>
 
 namespace memcachedcpp {
     template<typename Datatype>
@@ -40,13 +41,15 @@ namespace memcachedcpp {
             }            
         }
 
-        Datatype get(const std::string& key) {
+        std::tuple<bool, Datatype> get(const std::string& key) {
             auto request_length = detail::encode_get(key, get_request_buffer);
             boost::asio::write(socket, boost::asio::buffer(get_request_buffer, request_length));
             
-            Datatype ret{};
-
-            while(get_one(ret)) {}
+            std::tuple<bool, Datatype> ret{false,{}};
+            
+            while(get_one(std::get<1>(ret))) {
+                std::get<0>(ret) = true;
+            }
 
             return ret;
         }
