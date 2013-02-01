@@ -28,12 +28,8 @@ namespace memcachedcpp {
         }
 
         void set(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
-            auto server_id = get_server_id(key);
-            detail::encode_store("set", 3, key, value, timeout, set_request_buffer);
-            boost::asio::write(sockets[server_id], boost::asio::buffer(set_request_buffer, set_request_buffer.size()));
-            auto bytes_read = boost::asio::read_until(sockets[server_id], set_response_buffer, detail::linefeed());
-            auto status = detail::decode_store(set_response_buffer, bytes_read);
-
+            auto status = store_impl("set", 3, key, value, timeout);
+          
             if(status != detail::sucess_status()) {
                 throw std::runtime_error(status);
             }            
@@ -66,6 +62,16 @@ namespace memcachedcpp {
 
         std::vector<char> set_request_buffer;
         boost::asio::streambuf set_response_buffer;
+
+        std::string store_impl(const char* const command, const int command_length,
+                                const std::string& key, const Datatype& value, std::size_t timeout) {
+            auto server_id = get_server_id(key);
+            detail::encode_store(command, command_length, key, value, timeout, set_request_buffer);
+            boost::asio::write(sockets[server_id], boost::asio::buffer(set_request_buffer, set_request_buffer.size()));
+            auto bytes_read = boost::asio::read_until(sockets[server_id], set_response_buffer, detail::linefeed());
+            auto status = detail::decode_store(set_response_buffer, bytes_read);
+            return status;
+        }
 
         void connect() {
             for(auto&& server : servers) {
