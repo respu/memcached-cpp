@@ -78,6 +78,21 @@ namespace memcachedcpp {
             }
         }
 
+        bool del(const std::string& key) {
+            auto server_id = get_server_id(key);
+            detail::encode_delete(key, write_buffer);
+            boost::asio::write(sockets[server_id], boost::asio::buffer(write_buffer, write_buffer.size()));
+            auto bytes_read = boost::asio::read_until(sockets[server_id], read_buffer, detail::linefeed());
+            auto status = detail::decode_delete(read_buffer, bytes_read);
+
+            if(status == detail::deleted()) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
     private:
         std::hash<std::string> hasher;
         std::vector<std::string> servers;

@@ -36,6 +36,10 @@ namespace memcachedcpp { namespace detail {
         return "NOT_STORED";
     }
 
+    constexpr const char* deleted() {
+        return "DELETED";
+    }
+
     inline std::size_t extract_datasize(boost::asio::streambuf& buffer) {
         std::string str;
         std::istream is(&buffer);
@@ -125,5 +129,19 @@ namespace memcachedcpp { namespace detail {
         is.read(&status[0], bytes_read - linefeed_length());
         is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         return status;
+    }
+
+    inline void encode_delete(const std::string& key, std::vector<char>& buffer) {
+        constexpr const char* del = "delete";
+
+        buffer.clear();
+        std::copy(del, del + 6, std::back_inserter(buffer));
+        buffer.push_back(' ');
+        std::copy(key.begin(), key.end(), std::back_inserter(buffer));
+        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
+    }
+
+    inline std::string decode_delete(boost::asio::streambuf& buffer, std::size_t bytes_read) {
+        return decode_store(buffer, bytes_read);
     }
 }}
