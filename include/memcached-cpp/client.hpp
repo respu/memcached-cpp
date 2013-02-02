@@ -27,10 +27,24 @@ namespace memcachedcpp {
             init_consistent_hash();
         }
 
+        bool add(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
+            auto status = store_impl("add", 3, key, value, timeout);
+            
+            if(status == detail::not_stored_status()) {
+                return false; 
+            }
+            else if(status == detail::success_status()) {
+                return true;
+            }
+            else {
+                throw std::runtime_error(status);
+            }
+        }
+
         void set(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
             auto status = store_impl("set", 3, key, value, timeout);
           
-            if(status != detail::sucess_status()) {
+            if(status != detail::success_status()) {
                 throw std::runtime_error(status);
             }            
         }
@@ -42,6 +56,7 @@ namespace memcachedcpp {
             
             std::tuple<bool, Datatype> ret{false,{}};
 
+      
             while(get_one(std::get<1>(ret), server_id)) {
                 std::get<0>(ret) = true;
             }
@@ -100,7 +115,7 @@ namespace memcachedcpp {
                 [&] (const boost::system::error_code&, std::size_t bytes_transfered) -> bool {
                     return bytes_transfered <= data_size;
                 });
-                
+
             detail::decode_get(get_response_buffer, data_size, data);    
             return true;
         }

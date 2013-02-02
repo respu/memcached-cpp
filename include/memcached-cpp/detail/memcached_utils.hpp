@@ -28,8 +28,12 @@ namespace memcachedcpp { namespace detail {
         return 5;
     }
 
-    constexpr const char* sucess_status() {
+    constexpr const char* success_status() {
         return "STORED";
+    }
+
+    constexpr const char* not_stored_status() {
+        return "NOT_STORED";
     }
 
     inline std::size_t extract_datasize(boost::asio::streambuf& buffer) {
