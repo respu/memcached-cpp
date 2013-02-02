@@ -37,8 +37,8 @@ namespace memcachedcpp {
 
         std::tuple<bool, Datatype> get(const std::string& key) {
             auto server_id = get_server_id(key);
-            auto request_length = detail::encode_get(key, get_request_buffer);
-            boost::asio::write(sockets[server_id], boost::asio::buffer(get_request_buffer, request_length));
+            auto request_length = detail::encode_get(key, write_buffer);
+            boost::asio::write(sockets[server_id], boost::asio::buffer(write_buffer, request_length));
             
             std::tuple<bool, Datatype> ret{false,{}};
 
@@ -86,19 +86,16 @@ namespace memcachedcpp {
         boost::asio::io_service service;
         boost::ptr_vector<boost::asio::ip::tcp::socket> sockets;
 
-        std::vector<char> get_request_buffer;
-        boost::asio::streambuf get_response_buffer;
-
-        std::vector<char> set_request_buffer;
-        boost::asio::streambuf set_response_buffer;
+        std::vector<char> write_buffer; 
+        boost::asio::streambuf read_buffer; 
 
         std::string store_impl(const char* const command, const int command_length,
                                 const std::string& key, const Datatype& value, std::size_t timeout) {
             auto server_id = get_server_id(key);
-            detail::encode_store(command, command_length, key, value, timeout, set_request_buffer);
-            boost::asio::write(sockets[server_id], boost::asio::buffer(set_request_buffer, set_request_buffer.size()));
-            auto bytes_read = boost::asio::read_until(sockets[server_id], set_response_buffer, detail::linefeed());
-            auto status = detail::decode_store(set_response_buffer, bytes_read);
+            detail::encode_store(command, command_length, key, value, timeout, write_buffer);
+            boost::asio::write(sockets[server_id], boost::asio::buffer(write_buffer, write_buffer.size()));
+            auto bytes_read = boost::asio::read_until(sockets[server_id], read_buffer, detail::linefeed());
+            auto status = detail::decode_store(read_buffer, bytes_read);
             return status;
         }
 
@@ -115,22 +112,22 @@ namespace memcachedcpp {
         }
 
         bool get_one(Datatype& data, std::size_t server_id) {
-            auto bytes_read = boost::asio::read_until(sockets[server_id], get_response_buffer, detail::linefeed());
+            auto bytes_read = boost::asio::read_until(sockets[server_id], read_buffer, detail::linefeed());
 
             if(bytes_read == detail::endmarker_length()) { // no results found
-                std::istream is(&get_response_buffer);
+                std::istream is(&read_buffer);
                 is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 return false;
             }
 
-            auto data_size = detail::extract_datasize(get_response_buffer);
+            auto data_size = detail::extract_datasize(read_buffer);
 
-            boost::asio::read(sockets[server_id], get_response_buffer, 
+            boost::asio::read(sockets[server_id], read_buffer, 
                 [&] (const boost::system::error_code&, std::size_t bytes_transfered) -> bool {
                     return bytes_transfered <= data_size;
                 });
 
-            detail::decode_get(get_response_buffer, data_size, data);    
+            detail::decode_get(read_buffer, data_size, data);    
             return true;
         }
 
