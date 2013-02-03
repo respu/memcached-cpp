@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <iterator>
+#include <type_traits>
 
 namespace memcachedcpp { namespace detail {
 
@@ -71,7 +72,14 @@ namespace memcachedcpp { namespace detail {
         is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
-    template<typename Datatype>
+    template<typename Datatype, typename std::enable_if<std::is_integral<Datatype>::value, int>::type = 0>
+    void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, Datatype& output) {
+        std::string str;
+        decode_get(buffer, bytes, str);
+        output = boost::lexical_cast<Datatype>(str);
+    }
+
+    template<typename Datatype, typename std::enable_if<!std::is_integral<Datatype>::value, int>::type = 0>
     void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, Datatype& output) {
         std::string raw_data;
         decode_get(buffer, bytes, raw_data);
@@ -110,8 +118,16 @@ namespace memcachedcpp { namespace detail {
         std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
     }
 
+    template<typename Datatype, typename std::enable_if<std::is_integral<Datatype>::value, int>::type = 0>
+    void encode_store(const char* command, const std::size_t command_length,
+            const std::string& key, const Datatype& value,
+            std::size_t timeout, std::vector<char>& buffer) 
+    {
+        auto stringified = boost::lexical_cast<std::string>(value);
+        encode_store(command, command_length, key, stringified, timeout, buffer);
+    }
 
-    template<typename Datatype>
+    template<typename Datatype, typename std::enable_if<!std::is_integral<Datatype>::value, int>::type = 0>
     void encode_store(const char* command, const std::size_t command_length, 
             const std::string& key, const Datatype& value, 
             std::size_t timeout, std::vector<char>& buffer) 
