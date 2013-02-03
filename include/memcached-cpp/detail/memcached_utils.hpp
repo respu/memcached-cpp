@@ -37,6 +37,10 @@ namespace memcachedcpp { namespace detail {
         return "NOT_STORED";
     }
 
+    constexpr const char* not_found_status() {
+        return "NOT_FOUND";
+    }
+   
     constexpr const char* deleted() {
         return "DELETED";
     }
@@ -151,6 +155,7 @@ namespace memcachedcpp { namespace detail {
         constexpr const char* del = "delete";
 
         buffer.clear();
+
         std::copy(del, del + 6, std::back_inserter(buffer));
         buffer.push_back(' ');
         std::copy(key.begin(), key.end(), std::back_inserter(buffer));
@@ -159,5 +164,33 @@ namespace memcachedcpp { namespace detail {
 
     inline std::string decode_delete(boost::asio::streambuf& buffer, std::size_t bytes_read) {
         return decode_store(buffer, bytes_read);
+    }
+    
+    template<typename Datatype>
+    void encode_incr_decr(const char* command, const std::string& key, Datatype value, std::vector<char>& buffer) {
+        std::string stringified = boost::lexical_cast<std::string>(value);
+        buffer.clear();
+        std::copy(command, command + 4, std::back_inserter(buffer));
+        buffer.push_back(' ');
+        std::copy(key.begin(), key.end(), std::back_inserter(buffer));
+        buffer.push_back(' ');
+        std::copy(stringified.begin(), stringified.end(), std::back_inserter(buffer));
+        buffer.push_back(' ');
+        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
+    }
+
+    template<typename Datatype>
+    bool decode_incr_decr(boost::asio::streambuf& buffer, Datatype& output) {
+        std::istream is(&buffer);
+        std::string destringifier;
+        std::getline(is, destringifier);
+        destringifier.pop_back(); // pop back \r
+
+        if(destringifier == not_found_status()) {
+            return false;
+        }
+
+        output = boost::lexical_cast<Datatype>(destringifier);
+        return true; 
     }
 }}

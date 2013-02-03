@@ -93,6 +93,15 @@ namespace memcachedcpp {
             }
         }
 
+//        template<typename std::enable_if<std::is_integral<Datatype>::value, int>::type = 0>
+        std::tuple<bool, Datatype> incr(const std::string& key, Datatype incr_val) {
+            return incr_decr_impl("incr", key, incr_val);
+        }
+
+        std::tuple<bool, Datatype> decr(const std::string& key, Datatype decr_val) {
+            return incr_decr_impl("decr", key, decr_val);
+        }
+
     private:
         std::hash<std::string> hasher;
         std::vector<std::string> servers;
@@ -103,6 +112,18 @@ namespace memcachedcpp {
 
         std::vector<char> write_buffer; 
         boost::asio::streambuf read_buffer; 
+
+        std::tuple<bool, Datatype> incr_decr_impl(const char* const command, const std::string& key, Datatype incr_val) {
+            auto server_id = get_server_id(key);
+            detail::encode_incr_decr(command, key, incr_val, write_buffer);
+            boost::asio::write(sockets[server_id], boost::asio::buffer(write_buffer, write_buffer.size()));
+            boost::asio::read_until(sockets[server_id], read_buffer, detail::linefeed());
+
+            std::tuple<bool, Datatype> ret{false,{}};
+            std::get<0>(ret) = detail::decode_incr_decr(read_buffer, std::get<1>(ret));
+            
+            return ret;
+        }
 
         std::string store_impl(const char* const command, const int command_length,
                                 const std::string& key, const Datatype& value, std::size_t timeout) {
