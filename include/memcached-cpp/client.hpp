@@ -93,7 +93,6 @@ namespace memcachedcpp {
             }
         }
 
-//        template<typename std::enable_if<std::is_integral<Datatype>::value, int>::type = 0>
         std::tuple<bool, Datatype> incr(const std::string& key, Datatype incr_val) {
             return incr_decr_impl("incr", key, incr_val);
         }
