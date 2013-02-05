@@ -1,6 +1,10 @@
 // (C) Copyright Stephan Dollberg 2013. Distributed under the Boost
 // Software License, Version 1.0. (See accompanying file
 // LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#ifndef MEMCACHEDCPP_MEMCACHED_UTILS_HPP
+#define MEMCACHEDCPP_MEMCACHED_UTILS_HPP
+
+#include "message_creator.hpp"
 
 #include "boost/asio.hpp"
 #include "boost/lexical_cast.hpp"
@@ -54,18 +58,10 @@ namespace memcachedcpp { namespace detail {
         return boost::lexical_cast<std::size_t>(data_size);
     }
 
-    inline int encode_get(std::string key, std::vector<char>& buffer) {
-        constexpr const char* get = "get ";
-        auto size = 4 + key.size() + 3;
-
+    inline int encode_get(const std::string& key, std::vector<char>& buffer) {
         buffer.clear();
-        buffer.reserve(size);
-
-        std::copy(get, get + 4, std::back_inserter(buffer));
-        std::copy(key.begin(), key.end(), std::back_inserter(buffer));
-        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
-
-        return size;
+        indices(buffer, "get", key, "\r\n");
+        return buffer.size();
     }  
 
 
@@ -194,3 +190,5 @@ namespace memcachedcpp { namespace detail {
         return true; 
     }
 }}
+
+#endif // MEMCACHEDCPP_MEMCACHED_UTILS_HPP
