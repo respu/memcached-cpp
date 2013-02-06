@@ -60,7 +60,7 @@ namespace memcachedcpp { namespace detail {
 
     inline int encode_get(const std::string& key, std::vector<char>& buffer) {
         buffer.clear();
-        indices(buffer, "get", key, "\r\n");
+        fill_buffer(buffer, "get", key, "\r\n");
         return buffer.size();
     }  
 
