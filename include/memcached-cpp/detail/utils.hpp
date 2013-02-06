@@ -24,6 +24,9 @@ namespace memcachedcpp {
     template <typename Condition>
     using DisableIf = typename std::enable_if<!Condition::value, decltype(_)>::type;
 
+    template <typename T>
+    using is_arr = typename std::is_array<typename std::remove_reference<T>::type>::type;
+
 }
 
 #endif // MEMCACHEDCPP_UTILS_CPP
