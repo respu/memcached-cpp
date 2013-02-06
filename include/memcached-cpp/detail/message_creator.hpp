@@ -4,29 +4,32 @@
 #ifndef MEMCACHEDCPP_MESSAGE_CREATOR_HPP
 #define MEMCACHEDCPP_MESSAGE_CREATOR_HPP
 
+#include "utils.hpp"
+
 #include <vector>
 #include <iterator>
 #include <type_traits>
 
 namespace memcachedcpp { namespace detail {
-    template<typename T, typename std::enable_if<!std::is_array<typename std::remove_reference<T>::type>::value, int>::type = 0>
+
+    template<typename T, DisableIf<std::is_array<typename std::remove_reference<T>::type>> = _>
     void fill_buffer(std::vector<char>& buffer, T&& t) {
         std::copy(std::begin(t), std::end(t), std::back_inserter(buffer));
     }
 
-    template<typename T, typename std::enable_if<std::is_array<typename std::remove_reference<T>::type>::value, int>::type = 0>
+    template<typename T, EnableIf<std::is_array<typename std::remove_reference<T>::type>> = _>
     void fill_buffer (std::vector<char>& buffer, T&& t) {
         std::copy(std::begin(t), std::end(t) - 1, std::back_inserter(buffer));
     }
 
-    template<typename T, typename ...Ts, typename std::enable_if<!std::is_array<typename std::remove_reference<T>::type>::value, int>::type = 0>
+    template<typename T, typename ...Ts, DisableIf<std::is_array<typename std::remove_reference<T>::type>> = _>
     void fill_buffer(std::vector<char>& buffer, T&& t, Ts&& ...ts) {
         std::copy(std::begin(t), std::end(t), std::back_inserter(buffer));
         buffer.push_back(' ');
         fill_buffer(buffer, ts...);
     }
 
-    template<typename T, typename ...Ts, typename std::enable_if<std::is_array<typename std::remove_reference<T>::type>::value, int>::type = 0>
+    template<typename T, typename ...Ts, EnableIf<std::is_array<typename std::remove_reference<T>::type>> = _>
     void fill_buffer (std::vector<char>& buffer, T&& t, Ts&& ...ts) {
         std::copy(std::begin(t), std::end(t) - 1, std::back_inserter(buffer));
         buffer.push_back(' ');
