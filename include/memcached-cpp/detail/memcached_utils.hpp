@@ -93,42 +93,30 @@ namespace memcachedcpp { namespace detail {
         ia >> output;
     }
 
-
-    inline void encode_store(const char* command, const std::size_t command_length, 
+    inline void encode_store(const std::string& command, 
             const std::string& key, const std::string& value, 
             std::size_t timeout, std::vector<char>& buffer) 
     {
-        constexpr const char* flags = "0";
         auto timeout_str = boost::lexical_cast<std::string>(timeout);
         auto data_length = boost::lexical_cast<std::string>(value.length());
 
         buffer.clear();
-
-        std::copy(command, command + command_length, std::back_inserter(buffer));
-        buffer.push_back(' ');
-        std::copy(key.begin(), key.end(), std::back_inserter(buffer));
-        buffer.push_back(' ');
-        std::copy(flags, flags + 1, std::back_inserter(buffer));
-        buffer.push_back(' ');
-        std::copy(timeout_str.begin(), timeout_str.end(), std::back_inserter(buffer));
-        buffer.push_back(' ');
-        std::copy(data_length.begin(), data_length.end(), std::back_inserter(buffer));
-        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
-        std::copy(value.begin(), value.end(), std::back_inserter(buffer));
-        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
+        fill_buffer(buffer, command, key, "0", timeout_str, data_length, "\r\n");
+        fill_buffer(buffer, value);
+        fill_buffer(buffer, "\r\n");
     }
 
     template<typename Datatype, typename std::enable_if<std::is_integral<Datatype>::value, int>::type = 0>
-    void encode_store(const char* command, const std::size_t command_length,
+    void encode_store(const std::string& command,
             const std::string& key, const Datatype& value,
             std::size_t timeout, std::vector<char>& buffer) 
     {
         auto stringified = boost::lexical_cast<std::string>(value);
-        encode_store(command, command_length, key, stringified, timeout, buffer);
+        encode_store(command, key, stringified, timeout, buffer);
     }
 
     template<typename Datatype, typename std::enable_if<!std::is_integral<Datatype>::value, int>::type = 0>
-    void encode_store(const char* command, const std::size_t command_length, 
+    void encode_store(const std::string& command,
             const std::string& key, const Datatype& value, 
             std::size_t timeout, std::vector<char>& buffer) 
     {
@@ -136,7 +124,7 @@ namespace memcachedcpp { namespace detail {
         boost::archive::text_oarchive oa(ss);
         oa << value;
 
-        encode_store(command, command_length, key, ss.str(), timeout, buffer);
+        encode_store(command, key, ss.str(), timeout, buffer);
     }
 
     inline std::string decode_store(boost::asio::streambuf& buffer, std::size_t bytes_read) {

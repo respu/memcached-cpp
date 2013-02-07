@@ -30,7 +30,7 @@ namespace memcachedcpp {
         }
 
         void set(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
-            auto status = store_impl("set", 3, key, value, timeout);
+            auto status = store_impl("set", key, value, timeout);
           
             if(status != detail::success_status()) {
                 throw std::runtime_error(status);
@@ -52,7 +52,7 @@ namespace memcachedcpp {
         }
 
         bool add(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
-            auto status = store_impl("add", 3, key, value, timeout);
+            auto status = store_impl("add", key, value, timeout);
             
             if(status == detail::not_stored_status()) {
                 return false; 
@@ -67,7 +67,7 @@ namespace memcachedcpp {
 
         
         bool replace(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
-            auto status = store_impl("replace", 7, key, value, timeout);
+            auto status = store_impl("replace", key, value, timeout);
             
             if(status == detail::not_stored_status()) {
                 return false; 
@@ -126,10 +126,10 @@ namespace memcachedcpp {
             return ret;
         }
 
-        std::string store_impl(const char* const command, const int command_length,
-                                const std::string& key, const Datatype& value, std::size_t timeout) {
+        std::string store_impl(const std::string& command, const std::string& key,
+                                 const Datatype& value, std::size_t timeout) {
             auto server_id = get_server_id(key);
-            detail::encode_store(command, command_length, key, value, timeout, write_buffer);
+            detail::encode_store(command, key, value, timeout, write_buffer);
             boost::asio::write(sockets[server_id], boost::asio::buffer(write_buffer, write_buffer.size()));
             auto bytes_read = boost::asio::read_until(sockets[server_id], read_buffer, detail::linefeed());
             auto status = detail::decode_store(read_buffer, bytes_read);

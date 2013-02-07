@@ -6,34 +6,22 @@
 
 #include "utils.hpp"
 
+#include <string>
 #include <vector>
 #include <iterator>
 #include <type_traits>
 
 namespace memcachedcpp { namespace detail {
 
-    template<typename T, DisableIf<is_arr<T>> = _>
-    void fill_buffer(std::vector<char>& buffer, T&& t) {
+    inline void fill_buffer(std::vector<char>& buffer, const std::string& t) {
         std::copy(std::begin(t), std::end(t), std::back_inserter(buffer));
     }
 
-    template<typename T, EnableIf<is_arr<T>> = _>
-    void fill_buffer (std::vector<char>& buffer, T&& t) {
-        std::copy(std::begin(t), std::end(t) - 1, std::back_inserter(buffer));
-    }
-
-    template<typename T, typename ...Ts, DisableIf<is_arr<T>> = _>
-    void fill_buffer(std::vector<char>& buffer, T&& t, Ts&& ...ts) {
+    template<typename ...Ts>
+    void fill_buffer(std::vector<char>& buffer, const std::string& t, Ts&& ...ts) {
         std::copy(std::begin(t), std::end(t), std::back_inserter(buffer));
         buffer.push_back(' ');
-        fill_buffer(buffer, ts...);
-    }
-
-    template<typename T, typename ...Ts, EnableIf<is_arr<T>> = _>
-    void fill_buffer (std::vector<char>& buffer, T&& t, Ts&& ...ts) {
-        std::copy(std::begin(t), std::end(t) - 1, std::back_inserter(buffer));
-        buffer.push_back(' ');
-        fill_buffer(buffer, ts...);
+        fill_buffer(buffer, std::forward<Ts>(ts)...);
     }
 }}
 
