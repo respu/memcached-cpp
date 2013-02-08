@@ -21,16 +21,8 @@ namespace memcachedcpp { namespace detail {
         return "\r\n";
     }
 
-    constexpr std::size_t linefeed_length() {
-        return 2;
-    }
-
     constexpr const char* endmarker() {
         return "END\r\n";
-    }
-
-    constexpr std::size_t endmarker_length() {
-        return 5;
     }
 
     constexpr const char* success_status() {
@@ -60,7 +52,7 @@ namespace memcachedcpp { namespace detail {
 
     inline int encode_get(const std::string& key, std::vector<char>& buffer) {
         buffer.clear();
-        fill_buffer(buffer, "get", key, "\r\n");
+        fill_buffer(buffer, "get", key, linefeed());
         return buffer.size();
     }  
 
@@ -101,9 +93,9 @@ namespace memcachedcpp { namespace detail {
         auto data_length = boost::lexical_cast<std::string>(value.length());
 
         buffer.clear();
-        fill_buffer(buffer, command, key, "0", timeout_str, data_length, "\r\n");
+        fill_buffer(buffer, command, key, "0", timeout_str, data_length, linefeed());
         fill_buffer(buffer, value);
-        fill_buffer(buffer, "\r\n");
+        fill_buffer(buffer, linefeed());
     }
 
     template<typename Datatype, typename std::enable_if<std::is_integral<Datatype>::value, int>::type = 0>
@@ -137,7 +129,7 @@ namespace memcachedcpp { namespace detail {
 
     inline void encode_delete(const std::string& key, std::vector<char>& buffer) {
         buffer.clear();
-        fill_buffer(buffer, "delete", key, "\r\n");
+        fill_buffer(buffer, "delete", key, linefeed());
     }
 
     inline std::string decode_delete(boost::asio::streambuf& buffer, std::size_t bytes_read) {
@@ -148,7 +140,7 @@ namespace memcachedcpp { namespace detail {
     void encode_incr_decr(const std::string& command, const std::string& key, Datatype value, std::vector<char>& buffer) {
         std::string stringified = boost::lexical_cast<std::string>(value);
         buffer.clear();
-        fill_buffer(buffer, command, key, stringified, "\r\n");
+        fill_buffer(buffer, command, key, stringified, linefeed());
     }
 
     template<typename Datatype>
