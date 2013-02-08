@@ -21,8 +21,16 @@ namespace memcachedcpp { namespace detail {
         return "\r\n";
     }
 
+    constexpr std::size_t linefeed_length() {
+        return 2;
+    }
+
     constexpr const char* endmarker() {
         return "END\r\n";
+    }
+
+    constexpr std::size_t endmarker_length() {
+        return 5;
     }
 
     constexpr const char* success_status() {
