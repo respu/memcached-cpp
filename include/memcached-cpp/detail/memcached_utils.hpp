@@ -136,14 +136,8 @@ namespace memcachedcpp { namespace detail {
     }
 
     inline void encode_delete(const std::string& key, std::vector<char>& buffer) {
-        constexpr const char* del = "delete";
-
         buffer.clear();
-
-        std::copy(del, del + 6, std::back_inserter(buffer));
-        buffer.push_back(' ');
-        std::copy(key.begin(), key.end(), std::back_inserter(buffer));
-        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
+        fill_buffer(buffer, "delete", key, "\r\n");
     }
 
     inline std::string decode_delete(boost::asio::streambuf& buffer, std::size_t bytes_read) {
@@ -151,16 +145,10 @@ namespace memcachedcpp { namespace detail {
     }
     
     template<typename Datatype>
-    void encode_incr_decr(const char* command, const std::string& key, Datatype value, std::vector<char>& buffer) {
+    void encode_incr_decr(const std::string& command, const std::string& key, Datatype value, std::vector<char>& buffer) {
         std::string stringified = boost::lexical_cast<std::string>(value);
         buffer.clear();
-        std::copy(command, command + 4, std::back_inserter(buffer));
-        buffer.push_back(' ');
-        std::copy(key.begin(), key.end(), std::back_inserter(buffer));
-        buffer.push_back(' ');
-        std::copy(stringified.begin(), stringified.end(), std::back_inserter(buffer));
-        buffer.push_back(' ');
-        std::copy(linefeed(), linefeed() + linefeed_length(), std::back_inserter(buffer));
+        fill_buffer(buffer, command, key, stringified, "\r\n");
     }
 
     template<typename Datatype>

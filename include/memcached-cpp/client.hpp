@@ -114,7 +114,7 @@ namespace memcachedcpp {
         std::vector<char> write_buffer; 
         boost::asio::streambuf read_buffer; 
 
-        std::tuple<bool, Datatype> incr_decr_impl(const char* const command, const std::string& key, Datatype incr_val) {
+        std::tuple<bool, Datatype> incr_decr_impl(const std::string& command, const std::string& key, Datatype incr_val) {
             auto server_id = get_server_id(key);
             detail::encode_incr_decr(command, key, incr_val, write_buffer);
             boost::asio::write(sockets[server_id], boost::asio::buffer(write_buffer, write_buffer.size()));
