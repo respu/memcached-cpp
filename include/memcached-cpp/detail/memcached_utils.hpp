@@ -72,14 +72,14 @@ namespace memcachedcpp { namespace detail {
         is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
-    template<typename Datatype, typename std::enable_if<std::is_integral<Datatype>::value, int>::type = 0>
+    template<typename Datatype, EnableIf<std::is_integral<Datatype>> = _>
     void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, Datatype& output) {
         std::string str;
         decode_get(buffer, bytes, str);
         output = boost::lexical_cast<Datatype>(str);
     }
 
-    template<typename Datatype, typename std::enable_if<!std::is_integral<Datatype>::value, int>::type = 0>
+    template<typename Datatype, DisableIf<std::is_integral<Datatype>> = _>
     void decode_get(boost::asio::streambuf& buffer, std::size_t bytes, Datatype& output) {
         std::string raw_data;
         decode_get(buffer, bytes, raw_data);
@@ -106,7 +106,7 @@ namespace memcachedcpp { namespace detail {
         fill_buffer(buffer, linefeed());
     }
 
-    template<typename Datatype, typename std::enable_if<std::is_integral<Datatype>::value, int>::type = 0>
+    template<typename Datatype, EnableIf<std::is_integral<Datatype>> = _>
     void encode_store(const std::string& command,
             const std::string& key, const Datatype& value,
             std::size_t timeout, std::vector<char>& buffer) 
@@ -115,7 +115,7 @@ namespace memcachedcpp { namespace detail {
         encode_store(command, key, stringified, timeout, buffer);
     }
 
-    template<typename Datatype, typename std::enable_if<!std::is_integral<Datatype>::value, int>::type = 0>
+    template<typename Datatype, DisableIf<std::is_integral<Datatype>> = _>
     void encode_store(const std::string& command,
             const std::string& key, const Datatype& value, 
             std::size_t timeout, std::vector<char>& buffer) 
