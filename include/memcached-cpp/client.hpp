@@ -6,6 +6,7 @@
 
 #include "detail/memcached_utils.hpp"
 
+#include "boost/range/irange.hpp"
 #include "boost/ptr_container/ptr_vector.hpp"
 #include "boost/asio.hpp"
 #include <string>
@@ -170,8 +171,8 @@ namespace memcachedcpp {
 
         void init_consistent_hash() {
             std::sort(servers.begin(), servers.end());
-            for(std::size_t server_id = 0; server_id != servers.size(); ++server_id) {
-                for(auto i = 0; i != 256; ++i) {
+            for(auto&& server_id : boost::irange<std::size_t>(0, servers.size())) {
+                for(auto&& i : boost::irange(0, 256)) {
                     consistent_hash[hasher(servers[server_id] + std::to_string(i))] = server_id;                    
                 }
             }
