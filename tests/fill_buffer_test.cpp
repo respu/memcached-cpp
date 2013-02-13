@@ -16,7 +16,7 @@ TEST_CASE("fill_buffer/2", "tests basic usage with mixed strings") {
     std::vector<char> v;
     std::string hello = "hello";
     const std::string num = "123";
-    Std::string checker = "hello world 123";
+    std::string checker = "hello world 123";
     memcachedcpp::detail::fill_buffer(v, hello, "world", num);
     CHECK(std::equal(v.begin(), v.end(), checker.begin()));
 }
