@@ -14,6 +14,14 @@ TEST_CASE("extract_datasize/1", "tests proper extraction of datasize") {
     CHECK(test_val == supposed);
 }
 
+TEST_CASE("encode_get/2", "tests encode_get") {
+    std::vector<char> buf;
+    buf.push_back('X');
+    std::string ref = "get some_key \r\n";
+    memcachedcpp::detail::encode_get("some_key", buf);
+    CHECK(std::equal(buf.begin(), buf.end(), ref.begin()));
+}
+
 
 
 
