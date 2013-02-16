@@ -22,6 +22,16 @@ TEST_CASE("encode_get/2", "tests encode_get") {
     CHECK(std::equal(buf.begin(), buf.end(), ref.begin()));
 }
 
+TEST_CASE("decode_get/3", "tests decode_get with string") {
+    std::string output;
 
+    std::string ref = "randomevalue123\r\n";
+    boost::asio::streambuf sbuf;
+    std::ostream os(&sbuf);
+    os << ref;
 
+    memcachedcpp::detail::decode_get(sbuf, ref.size() - 2, output);
+    CHECK(std::equal(output.begin(), output.end(), ref.begin()));
+    CHECK(sbuf.size() == 0);
+}
 
