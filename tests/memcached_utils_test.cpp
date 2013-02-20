@@ -35,3 +35,15 @@ TEST_CASE("decode_get/3", "tests decode_get with string") {
     CHECK(sbuf.size() == 0);
 }
 
+TEST_CASE("decode_get/4", "tests decode_get with int") {
+    int output = 0;
+
+    std::string ref = "42\r\n";
+    boost::asio::streambuf sbuf;
+    std::ostream os(&sbuf);
+    os << ref;
+
+    memcachedcpp::detail::decode_get(sbuf, ref.size() - 2, output);
+    CHECK(output == 42);
+    CHECK(sbuf.size() == 0);
+}
