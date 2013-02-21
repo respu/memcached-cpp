@@ -53,6 +53,9 @@ namespace memcachedcpp { namespace detail {
         std::string str;
         std::istream is(&buffer);
         std::getline(is, str);
+        /* note that this should actually find the second to last whitespace 
+         *  but mc server in contrast to what is specified in the 
+         * protocol file doesn't add whitespace before \r\n */
         auto data_size_begin_pos = str.rfind(' ') + 1;
         std::string data_size(str.begin() + data_size_begin_pos, str.end() - 1); // -1 for \r
         return boost::lexical_cast<std::size_t>(data_size);
