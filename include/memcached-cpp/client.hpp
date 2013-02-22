@@ -101,12 +101,7 @@ namespace memcachedcpp {
             auto bytes_read = boost::asio::read_until(sockets[server_id], read_buffer, detail::linefeed());
             auto status = detail::decode_delete(read_buffer, bytes_read);
 
-            if(status == detail::deleted()) {
-                return true;
-            }
-            else {
-                return false;
-            }
+            return status == detail::deleted();
         }
 
         /** 
