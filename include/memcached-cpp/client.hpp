@@ -38,6 +38,10 @@ namespace memcachedcpp {
             }            
         }
 
+        /**
+         * @return first indicates whether value was found; second actual data -
+         *    default constructed if element was not found
+         */
         std::tuple<bool, Datatype> get(const std::string& key) {
             auto server_id = get_server_id(key);
             auto request_length = detail::encode_get(key, write_buffer);
@@ -52,6 +56,9 @@ namespace memcachedcpp {
             return ret;
         }
 
+        /**
+         * @return true if value was added
+         */
         bool add(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
             auto status = store_impl("add", key, value, timeout);
             
@@ -67,6 +74,9 @@ namespace memcachedcpp {
         }
 
         
+        /**
+         * @return true if value was replaced
+         */
         bool replace(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
             auto status = store_impl("replace", key, value, timeout);
             
@@ -81,6 +91,9 @@ namespace memcachedcpp {
             }
         }
 
+        /**
+         * @return true if value was deleted
+         */
         bool del(const std::string& key) {
             auto server_id = get_server_id(key);
             detail::encode_delete(key, write_buffer);
@@ -96,10 +109,16 @@ namespace memcachedcpp {
             }
         }
 
+        /** 
+         * @return first indicates whether incr was successful; second is the new value
+         */
         std::tuple<bool, Datatype> incr(const std::string& key, Datatype incr_val) {
             return incr_decr_impl("incr", key, incr_val);
         }
 
+        /**
+         * @return first indicates whether decr was successful; second is the new value
+         */
         std::tuple<bool, Datatype> decr(const std::string& key, Datatype decr_val) {
             return incr_decr_impl("decr", key, decr_val);
         }
