@@ -21,8 +21,17 @@
 #include <functional>
 
 namespace memcachedcpp {
-    template<typename Datatype>
+
+    enum class ip { tcp, udp };
+    enum class protocol { plain, binary };
+
+    template<typename Datatype, ip ip_type, protocol protocol_type>
     class client {
+    };
+ 
+
+    template<typename Datatype>
+    class client<Datatype, ip::tcp, protocol::plain> {
     public:
         client(std::vector<std::string> servers, std::string port) 
             : servers(std::move(servers)), port(std::move(port))
@@ -188,7 +197,7 @@ namespace memcachedcpp {
             std::sort(servers.begin(), servers.end());
             for(auto&& server_id : boost::irange<std::size_t>(0, servers.size())) {
                 for(auto&& i : boost::irange(0, 256)) {
-                    consistent_hash[hasher(servers[server_id] + std::to_string(i))] = server_id;                    
+                    consistent_hash[hasher(servers[server_id] + std::to_string(i))] = server_id; 
                 }
             }
         }
