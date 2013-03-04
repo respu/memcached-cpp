@@ -6,8 +6,8 @@
 
 #include "detail/memcached_utils.hpp"
 #include "config.hpp"
+#include "detail/consistent_hasher.hpp"
 
-#include <boost/range/irange.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/asio.hpp>
 
@@ -23,18 +23,17 @@
 
 namespace memcachedcpp {
 
-    template<typename Datatype, ip ip_type, protocol protocol_type>
-    class client {
+    template<typename Datatype, ip ip_type, protocol protocol_type, typename hasher>
+    class client_impl {
     };
  
-    template<typename Datatype>
-    class client<Datatype, ip::tcp, protocol::plain> {
+    template<typename Datatype, typename hasher>
+    class client_impl<Datatype, ip::tcp, protocol::plain, hasher> {
     public:
-        client(std::vector<std::string> servers, std::string port) 
-            : servers(std::move(servers)), port(std::move(port))
+        client_impl(std::vector<std::string> new_servers, std::string port) 
+            : servers(new_servers.begin(), new_servers.end()), con_hasher(servers.begin(), servers.end()), port(std::move(port))
         {
             connect();
-            init_consistent_hash();
         }
 
         void set(const std::string& key, const Datatype& value, std::size_t timeout = 0) {
@@ -126,10 +125,9 @@ namespace memcachedcpp {
         }
 
     private:
-        std::hash<std::string> hasher;
-        std::vector<std::string> servers;
+        std::set<std::string> servers;
+        detail::consistent_hasher<hasher> con_hasher;
         const std::string port;
-        std::map<std::size_t, std::size_t> consistent_hash;
         boost::asio::io_service service;
         boost::ptr_vector<boost::asio::ip::tcp::socket> sockets;
 
@@ -190,21 +188,13 @@ namespace memcachedcpp {
             return true;
         }
 
-        void init_consistent_hash() {
-            std::sort(servers.begin(), servers.end());
-            for(auto&& server_id : boost::irange<std::size_t>(0, servers.size())) {
-                for(auto&& i : boost::irange(0, 256)) {
-                    consistent_hash[hasher(servers[server_id] + std::to_string(i))] = server_id; 
-                }
-            }
-        }
-
         std::size_t get_server_id(const std::string& key) {
-            auto hash = hasher(key);
-            auto begin_iter = consistent_hash.upper_bound(hash);
-            return begin_iter != consistent_hash.end() ? begin_iter->second : consistent_hash.begin()->second;
+            return con_hasher.get_node_id(key);
         }
     };
+
+    template<typename T, ip ip_type, protocol prot_type>
+    using client = client_impl<T, ip_type, prot_type, std::hash<std::string>>;
 }
 
 #endif // MEMCACHED_CLIENT_HPP
