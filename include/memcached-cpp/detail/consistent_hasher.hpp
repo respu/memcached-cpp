@@ -5,6 +5,7 @@
 #define MEMCACHED_CONSISTENT_HASHER_HPP
 
 #include <boost/range/irange.hpp>
+#include <map>
 
 namespace memcachedcpp { namespace detail {
 
@@ -13,11 +14,12 @@ namespace memcachedcpp { namespace detail {
     public:
         template<typename server_iter>
         consistent_hasher(server_iter begin, server_iter end) {
-            std::vector<std::string> servers(begin, end);
-            for(auto&& server_id : boost::irange<std::size_t>(0, servers.size())) {
+            auto current_server_id = 0;
+            for(auto&& server_name : boost::iterator_range<server_iter>(begin, end)) {
                 for(auto&& i : boost::irange(0, 256)) {
-                    consistent_hash[hasher(servers[server_id] + std::to_string(i))] = server_id; 
+                    consistent_hash[hasher(server_name + std::to_string(i))] = current_server_id; 
                 }
+                current_server_id++;
             }
         }
 
