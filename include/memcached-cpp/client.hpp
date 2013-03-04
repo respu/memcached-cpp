@@ -5,6 +5,7 @@
 #define MEMCACHED_CLIENT_HPP
 
 #include "detail/memcached_utils.hpp"
+#include "config.hpp"
 
 #include <boost/range/irange.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -22,14 +23,10 @@
 
 namespace memcachedcpp {
 
-    enum class ip { tcp, udp };
-    enum class protocol { plain, binary };
-
     template<typename Datatype, ip ip_type, protocol protocol_type>
     class client {
     };
  
-
     template<typename Datatype>
     class client<Datatype, ip::tcp, protocol::plain> {
     public:
