@@ -5,6 +5,8 @@
 #define MEMCACHEDCPP_MESSAGE_CREATOR_HPP
 
 #include "utils.hpp"
+#include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm_ext.hpp>
 
 #include <string>
 #include <vector>
@@ -14,12 +16,12 @@
 namespace memcachedcpp { namespace detail {
 
     inline void fill_buffer(std::vector<char>& buffer, const std::string& t) {
-        std::copy(std::begin(t), std::end(t), std::back_inserter(buffer));
+        boost::push_back(buffer, t);
     }
 
     template<typename ...Ts>
     void fill_buffer(std::vector<char>& buffer, const std::string& t, Ts&& ...ts) {
-        std::copy(std::begin(t), std::end(t), std::back_inserter(buffer));
+        boost::push_back(buffer, t);
         buffer.push_back(' ');
         fill_buffer(buffer, std::forward<Ts>(ts)...);
     }
