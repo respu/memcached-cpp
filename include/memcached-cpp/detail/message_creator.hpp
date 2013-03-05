@@ -5,7 +5,6 @@
 #define MEMCACHEDCPP_MESSAGE_CREATOR_HPP
 
 #include "utils.hpp"
-#include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 
 #include <string>
