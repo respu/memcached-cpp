@@ -7,6 +7,7 @@
 #include "detail/memcached_utils.hpp"
 #include "config.hpp"
 #include "detail/consistent_hasher.hpp"
+#include "detail/asio_utils.hpp"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/asio.hpp>
@@ -156,15 +157,7 @@ namespace memcachedcpp {
         }
 
         void connect() {
-            for(auto&& server : servers) {
-                using socket_type = boost::asio::ip::tcp::socket;
-                std::unique_ptr<socket_type> socket_ptr(new socket_type(service));
-                boost::asio::ip::tcp::resolver resolver(service);
-                boost::asio::ip::tcp::resolver::query query(server, port);
-                auto endpoint_iter = resolver.resolve(query);
-                boost::asio::connect(*socket_ptr, endpoint_iter);
-                sockets.push_back(socket_ptr.release());
-            }
+            detail::connect_n_tcp(sockets, service, servers.begin(), servers.end(), port);
         }
 
         bool get_one(Datatype& data, std::size_t server_id) {
