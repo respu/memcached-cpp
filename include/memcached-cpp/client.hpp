@@ -30,8 +30,8 @@ namespace memcachedcpp {
     template<typename Datatype, typename hasher>
     class client_impl<Datatype, ip::tcp, protocol::plain, hasher> {
     public:
-        client_impl(const std::vector<std::string>& new_servers, std::string port) 
-            : servers(new_servers.begin(), new_servers.end()), con_hasher(servers.begin(), servers.end()), port(std::move(port))
+        client_impl(std::vector<std::string> new_servers, std::string port) 
+            : servers(std::make_move_iterator(new_servers.begin()), std::make_move_iterator(new_servers.end())), con_hasher(servers.begin(), servers.end()), port(std::move(port))
         {
             connect();
         }

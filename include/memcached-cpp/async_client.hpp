@@ -17,7 +17,7 @@ namespace memcachedcpp {
     template<typename T, typename hasher>
     class async_client_impl<T, ip::tcp, protocol::plain, hasher> {
     public:
-        async_client_impl(const std::vector<std::string>& new_servers, std::string new_port) : servers(new_servers.begin(), new_servers.end()), port(std::move(new_port)), con_hash(servers.begin(), servers.end()), server(servers.begin(), servers.end(), port) {
+        async_client_impl(std::vector<std::string> new_servers, std::string new_port) : servers(std::make_move_iterator(new_servers.begin()), std::make_move_iterator(new_servers.end())), port(std::move(new_port)), con_hash(servers.begin(), servers.end()), server(servers.begin(), servers.end(), port) {
         }
 
         std::future<T> get(const std::string& key) {
