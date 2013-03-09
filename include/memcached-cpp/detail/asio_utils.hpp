@@ -29,16 +29,6 @@ namespace memcachedcpp { namespace detail {
             socket_ptr.release();
         }
     }
-
-    template<typename server_iter, typename Callback>
-    void async_connect_n_tcp(boost::ptr_vector<tcp_socket>& sockets, boost::asio::io_service& service, server_iter begin, server_iter end, const std::string& port, Callback&& cb) {
-        for(auto iter = begin; iter != end; ++iter) {
-            std::unique_ptr<tcp_socket> socket_ptr(new tcp_socket(service));
-            boost::asio::async_connect(*socket_ptr, generate_tcp_endpoint(service, *iter, port), std::forward<Callback>(cb));
-            sockets.push_back(socket_ptr.get());
-            socket_ptr.release();
-        }
-    }
 }}
 
 #endif // MEMCACHED_ASIO_UTILS_HPP
