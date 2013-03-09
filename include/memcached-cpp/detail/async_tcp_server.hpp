@@ -22,7 +22,8 @@ namespace memcachedcpp { namespace detail {
     public:
         template<typename server_iter>
         async_tcp_server(server_iter begin, server_iter end, const std::string& port) {
-            async_connect_n_tcp(sockets, service, begin, end, port, [] (const boost::system::error_code&, boost::asio::ip::tcp::resolver::iterator) { });
+            using namespace std::placeholders;
+            async_connect_n_tcp(sockets, service, begin, end, port, std::bind(&async_tcp_server::handle_connect, this, _1, _2));
             //task = std::async(std::launch::async, [&] () { std::cout << service.run(); });
             service.run();
             std::cout << "afsdf" << std::endl; 
@@ -45,7 +46,7 @@ namespace memcachedcpp { namespace detail {
             }
         }
 
-        void handle_connect(const boost::system::error_code& error, boost::asio::ip::tcp::resolver::iterator) {
+        void handle_connect(const boost::system::error_code&, boost::asio::ip::tcp::resolver::iterator) {
 
         }
     };
