@@ -49,6 +49,10 @@ namespace memcachedcpp { namespace detail {
         return "DELETED";
     }
 
+    constexpr const char* noreply() {
+        return "noreply";
+    }
+
     inline std::size_t extract_datasize(boost::asio::streambuf& buffer) {
         std::string str;
         std::istream is(&buffer);

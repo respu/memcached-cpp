@@ -28,8 +28,8 @@ namespace memcachedcpp { namespace detail {
             task = std::async(std::launch::async, [&] () { service.run(); });
         }
 
-        void write(std::vector<char> buf, std::size_t index) {
-            service.post(std::bind(&async_tcp_server::do_write, this, std::move(buf), index));
+        void write(std::vector<char> buf, std::size_t server_index) {
+            service.post(std::bind(&async_tcp_server::do_write, this, std::move(buf), server_index));
         }
         
         ~async_tcp_server() {
@@ -54,7 +54,8 @@ namespace memcachedcpp { namespace detail {
         void async_read_n() {
             for(auto&& socket : sockets) {
                 using namespace std::placeholders;
-                boost::asio::async_read_until(socket, read_buffer, endmarker(), std::bind(&async_tcp_server::handle_read, this, _1, _2));
+                boost::asio::async_read_until(socket, read_buffer, endmarker(), 
+                        std::bind(&async_tcp_server::handle_read, this, _1, _2));
             }
         }
 
@@ -62,7 +63,7 @@ namespace memcachedcpp { namespace detail {
         }
 
         void handle_write(const boost::system::error_code&, std::size_t) {
-            // error check
+            // TODO error check
             buffer.pop_front();
             if(!buffer.empty()) {
                 async_write_wrapper();
@@ -71,7 +72,8 @@ namespace memcachedcpp { namespace detail {
 
         void async_write_wrapper() {
             using namespace std::placeholders;
-            boost::asio::async_write(sockets[std::get<0>(buffer.front())], boost::asio::buffer(std::get<1>(buffer.front())), std::bind(&async_tcp_server::handle_write, this, _1, _2));
+            boost::asio::async_write(sockets[std::get<0>(buffer.front())], boost::asio::buffer(std::get<1>(buffer.front())), 
+                    std::bind(&async_tcp_server::handle_write, this, _1, _2));
         }
     };
 
