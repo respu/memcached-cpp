@@ -29,6 +29,10 @@ namespace memcachedcpp {
         }
 
         std::future<Datatype> get(const std::string& key) {
+            detail::async_encode_get(key, write_buffer);
+            auto server_id = con_hash.get_node_id(key);
+            auto fut = server.get(write_buffer, server_id);
+            return fut;
         }
 
     private:
@@ -36,7 +40,7 @@ namespace memcachedcpp {
         const std::string port;
         detail::consistent_hasher<hasher> con_hash;
         std::vector<char> write_buffer;
-        detail::async_tcp_server server;
+        detail::async_tcp_server<Datatype> server;
     };
 
     template<typename T, ip ip_type, protocol protocol_type>

@@ -23,7 +23,7 @@ namespace memcachedcpp { namespace detail {
             }
         }
 
-        std::size_t get_node_id(const typename hash::argument_type& key) {
+        std::size_t get_node_id(const typename hash::argument_type& key) const {
             auto current_hash = hasher(key);
             auto begin_iter = consistent_hash.upper_bound(current_hash);
             return begin_iter != consistent_hash.end() ? begin_iter->second : consistent_hash.begin()->second;
