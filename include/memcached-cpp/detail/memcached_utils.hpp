@@ -172,6 +172,17 @@ namespace memcachedcpp { namespace detail {
         output = boost::lexical_cast<Datatype>(destringifier);
         return true; 
     }
+
+
+    std::size_t get_bytes_left(std::size_t data_size, const boost::asio::streambuf& read_buffer) {
+        if(data_size > read_buffer.size()) {
+            return data_size - read_buffer.size();
+        }
+        else {
+            return 0;
+        }
+    }
+ 
 }}
 
 #endif // MEMCACHEDCPP_MEMCACHED_UTILS_HPP

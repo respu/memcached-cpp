@@ -170,11 +170,8 @@ namespace memcachedcpp {
             }
 
             auto data_size = detail::extract_datasize(read_buffer);
-
-            boost::asio::read(sockets[server_id], read_buffer, 
-                [&] (const boost::system::error_code&, std::size_t bytes_transfered) -> bool {
-                    return bytes_transfered <= data_size;
-                });
+            auto bytes_left = detail::get_bytes_left(data_size, read_buffer);
+            boost::asio::read(sockets[server_id], read_buffer, boost::asio::transfer_at_least(bytes_left));
 
             detail::decode_get(read_buffer, data_size, data);    
             return true;

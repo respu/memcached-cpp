@@ -78,7 +78,7 @@ namespace memcachedcpp { namespace detail {
             }
 
             auto data_size = detail::extract_datasize(read_buffer);
-            auto bytes_to_be_read = get_bytes_left(data_size);
+            auto bytes_to_be_read = get_bytes_left(data_size, read_buffer);
             using namespace std::placeholders;
             boost::asio::async_read(
                 sockets[std::get<0>(promises.front())], 
@@ -133,15 +133,7 @@ namespace memcachedcpp { namespace detail {
                     std::bind(&async_tcp_server::handle_write, this, _1, _2));
         }
 
-        std::size_t get_bytes_left(std::size_t data_size) {
-            if(data_size > read_buffer.size()) {
-                return data_size - read_buffer.size();
-            }
-            else {
-                return 0;
-            }
-        }
-        
+       
     };
 
 }}
