@@ -95,7 +95,6 @@ namespace memcachedcpp { namespace detail {
             boost::asio::async_read_until(sockets[std::get<0>(promises.front())], read_buffer, endmarker(),
                     std::bind(&async_tcp_server::handle_read_endmarker, this, _1, _2));
 
-            std::cout << "asdfad" << data << "asdfasdf" << std::endl;
             std::get<1>(promises.front()).set_value(std::move(data));
         }
 

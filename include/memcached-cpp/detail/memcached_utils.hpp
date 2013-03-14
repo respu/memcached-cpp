@@ -10,6 +10,9 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/range/algorithm_ext.hpp>
+#include <boost/range/algorithm.hpp>
+
 #include <string>
 #include <vector>
 #include <iterator>
@@ -53,6 +56,11 @@ namespace memcachedcpp { namespace detail {
         return "noreply";
     }
 
+    /**
+     * @brief reads header line from get response and returns size of data
+     *          removes complete header from buffer
+     * @return data_size without ending linefeed
+     */
     inline std::size_t extract_datasize(boost::asio::streambuf& buffer) {
         std::string str;
         std::istream is(&buffer);
@@ -70,6 +78,14 @@ namespace memcachedcpp { namespace detail {
         fill_buffer(buffer, "get", key, linefeed());
         return buffer.size();
     }  
+
+    inline void encode_multi_get(const std::vector<std::string>& keys, std::vector<char>& buffer) {
+        buffer.clear();
+        fill_buffer(buffer, "get");
+        buffer.push_back(' ');
+        std::for_each(keys.begin(), keys.end(), [&] (const std::string& x) { boost::push_back(buffer, x); buffer.push_back(' '); });
+        fill_buffer(buffer, linefeed());
+    }
 
 
     void decode_get(boost::asio::streambuf& buffer, std::size_t data_size, std::string& output) {

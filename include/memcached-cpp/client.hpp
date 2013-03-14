@@ -20,6 +20,7 @@
 #include <iterator>
 #include <tuple>
 #include <functional>
+#include <unordered_map>
 
 namespace memcachedcpp {
 
@@ -50,8 +51,8 @@ namespace memcachedcpp {
          */
         std::tuple<bool, Datatype> get(const std::string& key) {
             auto server_id = get_server_id(key);
-            auto request_length = detail::encode_get(key, write_buffer);
-            boost::asio::write(sockets[server_id], boost::asio::buffer(write_buffer, request_length));
+            detail::encode_get(key, write_buffer);
+            boost::asio::write(sockets[server_id], boost::asio::buffer(write_buffer, write_buffer.size()));
             
             std::tuple<bool, Datatype> ret{false,{}};
 
@@ -61,6 +62,30 @@ namespace memcachedcpp {
 
             return ret;
         }
+
+        /**
+         * @return std::vector which contains all found elements
+         */
+        std::vector<Datatype> get_multi(std::vector<std::string> keys) {
+            auto server_mapping = get_server_mapping(keys);
+            for(auto&& server : server_mapping) {
+                auto server_id = std::get<0>(server);
+                detail::encode_multi_get(std::get<1>(server), write_buffer);
+                boost::asio::write(sockets[server_id], boost::asio::buffer(write_buffer, write_buffer.size()));
+            }
+
+            std::vector<Datatype> ret_vector;
+            for(auto&& server : server_mapping) {
+                Datatype extractor{};
+                while(get_one(extractor,std::get<0>(server))) {
+                    ret_vector.emplace_back(std::move(extractor));
+                }
+            }
+
+            return ret_vector;
+        } 
+            
+
 
         /**
          * @return true if value was added
@@ -160,6 +185,11 @@ namespace memcachedcpp {
             detail::connect_n_tcp(sockets, service, servers.begin(), servers.end(), port);
         }
 
+        /**
+         * @brief reads one element in a get response from mc-server
+         *          reads header line and then extracts data
+         * @return false if only END\r\n marker was read, true if element was extracted
+         */
         bool get_one(Datatype& data, std::size_t server_id) {
             auto bytes_read = boost::asio::read_until(sockets[server_id], read_buffer, detail::linefeed());
 
@@ -170,7 +200,7 @@ namespace memcachedcpp {
             }
 
             auto data_size = detail::extract_datasize(read_buffer);
-            auto bytes_left = detail::get_bytes_left(data_size, read_buffer);
+            auto bytes_left = detail::get_bytes_left(data_size, read_buffer); // check how many bytes we still need to read
             boost::asio::read(sockets[server_id], read_buffer, boost::asio::transfer_at_least(bytes_left));
 
             detail::decode_get(read_buffer, data_size, data);    
@@ -180,6 +210,23 @@ namespace memcachedcpp {
         std::size_t get_server_id(const std::string& key) {
             return con_hasher.get_node_id(key);
         }
+
+        /**
+         * @brief transform a set of keys into a set of keys for each server
+         * @return std::unordered_map<std::size_t, std::vector<std::string>>
+         */
+        std::unordered_map<std::size_t, std::vector<std::string>> get_server_mapping(std::vector<std::string> keys) {
+            std::unordered_map<std::size_t, std::vector<std::string>> ret_map;
+
+            for(auto&& key : keys) {
+                auto server_id = con_hasher.get_node_id(key);
+                ret_map[server_id].emplace_back(std::move(key));
+            }
+
+            return ret_map;
+        }
+
+
     };
 
     template<typename T, ip ip_type, protocol prot_type>
