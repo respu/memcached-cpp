@@ -73,16 +73,14 @@ namespace memcachedcpp { namespace detail {
         return boost::lexical_cast<std::size_t>(data_size);
     }
 
-    inline int encode_get(const std::string& key, std::vector<char>& buffer) {
+    inline void encode_get(const std::string& key, std::vector<char>& buffer) {
         buffer.clear();
         fill_buffer(buffer, "get", key, linefeed());
-        return buffer.size();
     }  
 
     inline void encode_multi_get(const std::vector<std::string>& keys, std::vector<char>& buffer) {
         buffer.clear();
-        fill_buffer(buffer, "get");
-        buffer.push_back(' ');
+        fill_buffer(buffer, "get ");
         std::for_each(keys.begin(), keys.end(), [&] (const std::string& x) { boost::push_back(buffer, x); buffer.push_back(' '); });
         fill_buffer(buffer, linefeed());
     }
