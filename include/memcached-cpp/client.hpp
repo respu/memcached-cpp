@@ -32,7 +32,7 @@ namespace memcachedcpp {
     class client_impl<Datatype, ip::tcp, protocol::plain, hasher> {
     public:
         client_impl(std::vector<std::string> new_servers, std::string port) 
-            : servers(std::make_move_iterator(new_servers.begin()), std::make_move_iterator(new_servers.end())), con_hasher(servers.begin(), servers.end()), port(std::move(port))
+            : servers(std::make_move_iterator(new_servers.begin()), std::make_move_iterator(new_servers.end())), port(std::move(port)), con_hasher(servers.begin(), servers.end())
         {
             connect();
         }
@@ -150,9 +150,9 @@ namespace memcachedcpp {
         }
 
     private:
-        std::set<std::string> servers;
-        detail::consistent_hasher<hasher> con_hasher;
+        const std::set<std::string> servers;
         const std::string port;
+        detail::consistent_hasher<hasher> con_hasher;
         boost::asio::io_service service;
         boost::ptr_vector<boost::asio::ip::tcp::socket> sockets;
 
