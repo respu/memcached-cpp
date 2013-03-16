@@ -189,8 +189,9 @@ namespace memcachedcpp { namespace detail {
 
 
     std::size_t get_bytes_left(std::size_t data_size, const boost::asio::streambuf& read_buffer) {
-        if(data_size > read_buffer.size()) {
-            return data_size - read_buffer.size();
+        auto total = data_size + linefeed_length();
+        if(total > read_buffer.size()) {
+            return total - read_buffer.size();
         }
         else {
             return 0;
