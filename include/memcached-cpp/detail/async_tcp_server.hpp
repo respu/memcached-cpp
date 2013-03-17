@@ -73,10 +73,9 @@ namespace memcachedcpp { namespace detail {
         }
 
 
-        void handle_read_header(std::size_t server_id, const boost::system::error_code& error, std::size_t bytes_read) {
+        void handle_read_header(std::size_t server_id, const boost::system::error_code& , std::size_t bytes_read) {
             if(bytes_read == detail::endmarker_length()) { // no results found
-                std::istream is(&read_buffers[server_id]);
-                is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                ignore_line_break(read_buffers[server_id]);
                 promises[server_id].front().set_value(T());
                 pop_first_promise(server_id);
                 async_read_header_wrapper(server_id);
@@ -85,9 +84,7 @@ namespace memcachedcpp { namespace detail {
                 auto data_size = detail::extract_datasize(read_buffers[server_id]);
                 auto bytes_to_be_read = get_bytes_left(data_size, read_buffers[server_id]);
                 using namespace std::placeholders;
-                boost::asio::async_read(
-                    sockets[server_id], 
-                    read_buffers[server_id], 
+                boost::asio::async_read(sockets[server_id], read_buffers[server_id], 
                     boost::asio::transfer_at_least(bytes_to_be_read),
                     std::bind(&async_tcp_server::handle_read_data, this, server_id, data_size, _1, _2));
             }
@@ -105,8 +102,7 @@ namespace memcachedcpp { namespace detail {
         }
 
         void handle_read_endmarker(std::size_t server_id, const boost::system::error_code&, std::size_t) {
-            std::istream is(&read_buffers[server_id]);
-            is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            ignore_line_break(read_buffers[server_id]);
 
             async_read_header_wrapper(server_id);
 

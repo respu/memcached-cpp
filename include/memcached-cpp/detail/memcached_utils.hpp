@@ -197,7 +197,11 @@ namespace memcachedcpp { namespace detail {
             return 0;
         }
     }
- 
+
+    void ignore_line_break(boost::asio::streambuf& read_buffer) {
+        std::istream is(&read_buffer);
+        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
 }}
 
 #endif // MEMCACHEDCPP_MEMCACHED_UTILS_HPP
