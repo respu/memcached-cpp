@@ -84,6 +84,13 @@ namespace memcachedcpp {
 
             return ret_vector;
         } 
+
+        template<typename ...Args>
+        std::vector<Datatype> get_multi(Args ...args) {
+            std::cout << "variadic" << std::endl;
+            std::vector<std::string> keys{ args... };
+            return get_multi(std::move(keys));
+        }
             
 
 
