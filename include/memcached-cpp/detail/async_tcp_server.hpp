@@ -78,7 +78,7 @@ namespace memcachedcpp { namespace detail {
                 std::istream is(&read_buffers[server_id]);
                 is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 promises[server_id].front().set_value(T());
-                promises[server_id].pop_front();
+                pop_first_promise(server_id);
                 async_read_header_wrapper(server_id);
             }
             else {
@@ -110,8 +110,7 @@ namespace memcachedcpp { namespace detail {
 
             async_read_header_wrapper(server_id);
 
-            std::lock_guard<std::mutex> lock(mutex);
-            promises[server_id].pop_front();
+            pop_first_promise(server_id);
         }
 
         void async_read_n() {
@@ -140,8 +139,10 @@ namespace memcachedcpp { namespace detail {
                     std::bind(&async_tcp_server::handle_read_header, this, server_id, _1, _2));
         }
 
-
-       
+        void pop_first_promise(std::size_t server_id) {
+            std::lock_guard<std::mutex> lock(mutex);
+            promises[server_id].pop_front();
+        }
     };
 
 }}
