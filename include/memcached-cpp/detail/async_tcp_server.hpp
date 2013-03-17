@@ -110,6 +110,7 @@ namespace memcachedcpp { namespace detail {
             boost::asio::async_read_until(sockets[server_id], read_buffers[server_id],
                     linefeed(), std::bind(&async_tcp_server::handle_read_header, this, server_id, _1, _2));
 
+            std::lock_guard<std::mutex> lock(mutex);
             promises[server_id].pop_front();
         }
 
