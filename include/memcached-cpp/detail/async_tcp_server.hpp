@@ -27,6 +27,7 @@ namespace memcachedcpp { namespace detail {
         template<typename server_iter>
         async_tcp_server(server_iter begin, server_iter end, const std::string& port) : 
             promises(std::distance(begin,end)), 
+            dummy_buffers(std::distance(begin, end)),
             read_buffers(std::distance(begin,end))
         {
             connect_n_tcp(sockets, service, begin, end, port);
@@ -56,6 +57,7 @@ namespace memcachedcpp { namespace detail {
         boost::ptr_vector<boost::asio::ip::tcp::socket> sockets;
         std::deque<std::tuple<std::size_t, std::vector<char>>> buffer;
         std::deque<std::deque<std::promise<T>>> promises;
+        std::deque<T> dummy_buffers;
         std::deque<boost::asio::streambuf> read_buffers;
         mutable std::mutex mutex;
         std::future<void> task;
@@ -98,7 +100,7 @@ namespace memcachedcpp { namespace detail {
             boost::asio::async_read_until(sockets[server_id], read_buffers[server_id], endmarker(),
                     std::bind(&async_tcp_server::handle_read_endmarker, this, server_id, _1, _2));
 
-            promises[server_id].front().set_value(std::move(data));
+            dummy_buffers[server_id] = std::move(data); // when can only set set promise when message is completely received
         }
 
         void handle_read_endmarker(std::size_t server_id, const boost::system::error_code&, std::size_t) {
@@ -106,6 +108,7 @@ namespace memcachedcpp { namespace detail {
 
             async_read_header_wrapper(server_id);
 
+            promises[server_id].front().set_value(std::move(dummy_buffers[server_id]));
             pop_first_promise(server_id);
         }
 
