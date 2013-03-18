@@ -10,7 +10,7 @@
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/asio.hpp>
-#include <boost/system/system_error.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <string>
 #include <future>
@@ -75,7 +75,34 @@ namespace memcachedcpp { namespace detail {
         }
 
 
-        void handle_read_header(std::size_t server_id, const boost::system::error_code& , std::size_t bytes_read) {
+        void handle_read_header(std::size_t server_id, const boost::system::error_code& error, std::size_t bytes_read) {
+            if(error == boost::system::errc::success) {
+                handle_read_header_impl(server_id, bytes_read);
+            }
+            else {
+                // handle error
+            }
+        }
+
+        void handle_read_data(std::size_t server_id, std::size_t data_size, const boost::system::error_code& error, std::size_t) {
+            if(error == boost::system::errc::success) {
+                handle_read_data_impl(server_id, data_size);
+            }
+            else {
+                // handle error
+            }
+        }
+
+        void handle_read_endmarker(std::size_t server_id, const boost::system::error_code& error, std::size_t) {
+            if(error == boost::system::errc::success) {
+                handle_read_endmarker_impl(server_id);
+            }
+            else {
+                // handle error 
+            }
+        }
+
+        void handle_read_header_impl(std::size_t server_id, std::size_t bytes_read) {
             if(bytes_read == detail::endmarker_length()) { // no results found
                 ignore_line_break(read_buffers[server_id]);
                 promises[server_id].front().set_value(T());
@@ -92,7 +119,7 @@ namespace memcachedcpp { namespace detail {
             }
         }
 
-        void handle_read_data(std::size_t server_id, std::size_t data_size, const boost::system::error_code&, std::size_t) {
+        void handle_read_data_impl(std::size_t server_id, std::size_t data_size) {
             using namespace std::placeholders;
             std::string data;
             decode_get(read_buffers[server_id], data_size, data);    
@@ -100,17 +127,17 @@ namespace memcachedcpp { namespace detail {
             boost::asio::async_read_until(sockets[server_id], read_buffers[server_id], endmarker(),
                     std::bind(&async_tcp_server::handle_read_endmarker, this, server_id, _1, _2));
 
-            dummy_buffers[server_id] = std::move(data); // when can only set set promise when message is completely received
+            dummy_buffers[server_id] = std::move(data); // when can only set promise when the message is completely received
         }
 
-        void handle_read_endmarker(std::size_t server_id, const boost::system::error_code&, std::size_t) {
+        void handle_read_endmarker_impl(std::size_t server_id) {
             ignore_line_break(read_buffers[server_id]);
 
             async_read_header_wrapper(server_id);
 
             promises[server_id].front().set_value(std::move(dummy_buffers[server_id]));
             pop_first_promise(server_id);
-        }
+       }
 
         void async_read_n() {
             for(auto&& server_id : boost::irange<std::size_t>(0, sockets.size())) {
