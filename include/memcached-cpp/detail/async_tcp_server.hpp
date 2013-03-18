@@ -55,12 +55,12 @@ namespace memcachedcpp { namespace detail {
     private:
         boost::asio::io_service service;
         boost::ptr_vector<boost::asio::ip::tcp::socket> sockets;
-        std::deque<std::tuple<std::size_t, std::vector<char>>> buffer;
-        std::deque<std::deque<std::promise<T>>> promises;
-        std::deque<T> dummy_buffers;
-        std::deque<boost::asio::streambuf> read_buffers;
-        mutable std::mutex mutex;
-        std::future<void> task;
+        std::deque<std::tuple<std::size_t, std::vector<char>>> buffer; // write buffer for each socket
+        std::deque<std::deque<std::promise<T>>> promises; // promises for each socket
+        std::deque<T> dummy_buffers; // dummy T for each socket, needed to store elem between data and endmarker
+        std::deque<boost::asio::streambuf> read_buffers; // read_buffer for each socket
+        mutable std::mutex mutex; // needed to protect promise deque for producer & consumer
+        std::future<void> task; // runs io_service::run async 
 
         void do_write(std::vector<char> new_buffer, std::size_t index) {
             bool work_queue_empty = buffer.empty();
@@ -80,7 +80,7 @@ namespace memcachedcpp { namespace detail {
                 handle_read_header_impl(server_id, bytes_read);
             }
             else {
-                // handle error
+                handle_error(server_id, error);
             }
         }
 
@@ -89,7 +89,7 @@ namespace memcachedcpp { namespace detail {
                 handle_read_data_impl(server_id, data_size);
             }
             else {
-                // handle error
+                handle_error(server_id, error);
             }
         }
 
@@ -98,7 +98,7 @@ namespace memcachedcpp { namespace detail {
                 handle_read_endmarker_impl(server_id);
             }
             else {
-                // handle error 
+                handle_error(server_id, error);
             }
         }
 
@@ -151,6 +151,19 @@ namespace memcachedcpp { namespace detail {
             if(!buffer.empty()) {
                 async_write_wrapper();
             }
+        }
+
+        /**
+         * @brief on error we set all current promises of the current socket to the given exception and return into 
+         *          read_header state
+         */
+        void handle_error(std::size_t server_id, const boost::system::error_code& error) {
+            std::lock_guard<std::mutex> lock(mutex);
+            for(auto&& promise : promises[server_id]) {
+                promise.set_exception(std::make_exception_ptr(boost::system::system_error(error)));
+            }
+            promises[server_id].clear();
+            async_read_header_wrapper(server_id);
         }
 
         void async_write_wrapper() {
