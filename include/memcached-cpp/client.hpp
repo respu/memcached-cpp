@@ -235,8 +235,8 @@ namespace memcachedcpp {
 
     };
 
-    template<typename T, ip ip_type, protocol prot_type>
-    using client = client_impl<T, ip_type, prot_type, std::hash<std::string>>;
+    template<typename T, ip ip_type, protocol prot_type, typename hasher = std::hash<std::string>>
+    using client = client_impl<T, ip_type, prot_type, hasher>;
 }
 
 #endif // MEMCACHED_CLIENT_HPP

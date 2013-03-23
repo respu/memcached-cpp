@@ -43,8 +43,8 @@ namespace memcachedcpp {
         detail::async_tcp_server<Datatype> server;
     };
 
-    template<typename T, ip ip_type, protocol protocol_type>
-    using async_client = async_client_impl<T, ip_type, protocol_type, std::hash<std::string>>;
+    template<typename T, ip ip_type, protocol protocol_type, typename hasher = std::hash<std::string>>
+    using async_client = async_client_impl<T, ip_type, protocol_type, hasher>;
 
 
 }
