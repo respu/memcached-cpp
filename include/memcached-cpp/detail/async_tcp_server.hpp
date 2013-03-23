@@ -120,7 +120,7 @@ namespace memcachedcpp { namespace detail {
 
         void handle_read_data_impl(std::size_t server_id, std::size_t data_size) {
             using namespace std::placeholders;
-            std::string data;
+            T data;
             decode_get(read_buffers[server_id], data_size, data);    
 
             boost::asio::async_read_until(sockets[server_id], read_buffers[server_id], endmarker(),
@@ -161,7 +161,7 @@ namespace memcachedcpp { namespace detail {
                 promise.set_exception(std::make_exception_ptr(boost::system::system_error(error)));
             }
             promises[server_id].clear();
-            async_read_header_wrapper(server_id);
+            service.stop();
         }
 
         void async_write_wrapper() {
