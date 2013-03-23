@@ -32,7 +32,7 @@ namespace memcachedcpp { namespace detail {
         {
             connect_n_tcp(sockets, service, begin, end, port);
             async_read_n();
-            task = std::async(std::launch::async, [&] () { service.run(); });
+            task = std::async(std::launch::async, [] (boost::asio::io_service& service) { service.run(); }, std::ref(service));
         }
 
         void write(std::vector<char> buf, std::size_t server_index) {
@@ -140,7 +140,7 @@ namespace memcachedcpp { namespace detail {
        }
 
         void async_read_n() {
-            for(auto&& server_id : boost::irange<std::size_t>(0, sockets.size())) {
+            for(int server_id : boost::irange<std::size_t>(0, sockets.size())) {
                 async_read_header_wrapper(server_id);
             }
         }

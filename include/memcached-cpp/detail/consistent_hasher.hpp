@@ -16,7 +16,7 @@ namespace memcachedcpp { namespace detail {
         consistent_hasher(server_iter begin, server_iter end) {
             auto current_server_id = 0;
             for(auto&& server_name : boost::iterator_range<server_iter>(begin, end)) {
-                for(auto&& i : boost::irange(0, 256)) {
+                for(int i : boost::irange(0, 256)) {
                     consistent_hash[hasher(server_name + std::to_string(i))] = current_server_id; 
                 }
                 current_server_id++;
