@@ -42,9 +42,8 @@ namespace memcachedcpp { namespace detail {
         std::future<T> get(std::vector<char> buf, std::size_t server_id) {
             std::promise<T> promise;
             auto fut = promise.get_future();
-            std::lock_guard<std::mutex> lock(mutex);
-            promises[server_id].emplace_back(std::move(promise));
-            service.post(std::bind(&async_tcp_server::do_get, this, std::move(buf), server_id));
+            auto wrapper = std::make_shared<std::promise<T>>(std::move(promise)); // boost asio Y U no move?
+            service.post(std::bind(&async_tcp_server::do_get, this, std::move(wrapper), std::move(buf), server_id));
             return fut;
         }
         
@@ -59,7 +58,6 @@ namespace memcachedcpp { namespace detail {
         std::deque<std::deque<std::promise<T>>> promises; // promises for each socket
         std::deque<T> dummy_buffers; // dummy T for each socket, needed to store elem between data and endmarker
         std::deque<boost::asio::streambuf> read_buffers; // read_buffer for each socket
-        mutable std::mutex mutex; // needed to protect promise deque for producer & consumer
         std::future<void> task; // runs io_service::run async 
 
         void do_write(std::vector<char> new_buffer, std::size_t index) {
@@ -70,8 +68,9 @@ namespace memcachedcpp { namespace detail {
             }
         }
 
-        void do_get(std::vector<char> new_buffer, std::size_t index) {
-            do_write(std::move(new_buffer), index);
+        void do_get(std::shared_ptr<std::promise<T>> wrapped_promise, std::vector<char> new_buffer, std::size_t server_id) {
+            promises[server_id].emplace_back(std::move(*wrapped_promise));
+            do_write(std::move(new_buffer), server_id);
         }
 
 
@@ -158,7 +157,6 @@ namespace memcachedcpp { namespace detail {
          *          read_header state
          */
         void handle_error(std::size_t server_id, const boost::system::error_code& error) {
-            std::lock_guard<std::mutex> lock(mutex);
             for(auto&& promise : promises[server_id]) {
                 promise.set_exception(std::make_exception_ptr(boost::system::system_error(error)));
             }
@@ -179,7 +177,6 @@ namespace memcachedcpp { namespace detail {
         }
 
         void pop_first_promise(std::size_t server_id) {
-            std::lock_guard<std::mutex> lock(mutex);
             promises[server_id].pop_front();
         }
     };
