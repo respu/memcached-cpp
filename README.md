@@ -35,7 +35,7 @@ On sending the actual message format is created and then stored in a buffer whic
 
 The get command is a little more complicated as it's the only one which waits on a response from the server(s). It's consists of two steps - sending the request and waiting for the result.
 When the user calls get a `std::promise` is created whose `std::future` is returned to the user, he can now wait for it to become ready.  
-On the server side, the future is bound via a `std::shared_ptr`(if `boost::asio` would support moving on its completion-handlers, the shared_ptr wouldn't be necessary) to the a completion handler which is then `post`ed. The completion handler - executed in the callback handler thread - now moves the promise to a deque which stores all the promises for the current server and sends the actual memcached write command to the server. When the client connects to the server, a `boost::asio::async_read_until` handler is set which now waits for the server to respond with data. 
+On the server side, the future is bound via a `std::shared_ptr`(if `boost::asio` would support moving on its completion-handlers, the shared_ptr wouldn't be necessary) to a completion handler which is then `post`ed. The completion handler - executed in the callback handler thread - now moves the promise to a deque which stores all the promises for the current server and sends the actual memcached write command to the server. When the client connects to the server, a `boost::asio::async_read_until` handler is set which now waits for the server to respond with data. 
 The data is received in a three-phase approach which was selected to be usable on multi-get(that is currently not implemented, though). In the first phase the message header is read to extract the size of the data package, which is then read and finally the message endmarker, after that it waits for the message header again. In the last phase the received data is set to the promise and the promise is discarded from the internal deque. Every callback sets the async_read for the next.  
 All data sharing happens either via `std::future` or via `boost::asio::io_service::post` as such no additional synchronization is needed here. 
 
@@ -44,14 +44,14 @@ Due to the fact that a memcached client may be connected to more than one server
 ### What are the benefits?
 There are two major key benefits. 
 
-The first one being the inherent asynchronous nature. This enables you to do other stuff while waiting for network IO. This is also a great internal boost the calls to the different servers can be fulfilled in parallel. Though, this optimization could also be applied to the non-async client.
+The first one being the inherent asynchronous nature. This enables you to do other stuff while waiting for network IO. This is also a great boost for the internal message handling, as the calls to the different servers can be fulfilled in asynchronously. Though, this optimization could also be applied to the non-async client.
 
 The second benefit is that this client is thread-safe out of the box. You can use it from several threads at the same time. This is not possible with the normal client. However there is currently only one internal thread which handles the requests. This can easily be modified to use more threads.
 
 ### Open problems?
-A currently unhandled problem is the treatment of errors. In the current implementation the client just stops its async runner thread when error occurs which leaves the client in an unusable state.
+A currently unhandled problem is the treatment of errors. In the current implementation the client just stops its async runner thread when an error occurs which leaves the client in an unusable state.
 
-The problem is that errors might occur during reading and writing data. If the error happens on write, there is no way the client can tell that the user as a storage command is basically a fire and forget task. This could be solved by setting an invalid flag which gets checked on every call call.  
+The problem is that errors might occur during reading and writing data. If the error happens on write, there is no way the client can notify the user as a storage command is basically a fire and forget task. This could be solved by setting an invalid flag which gets checked on every call.  
 On the reader side we have the possibility to set the error as an exception to the future. 
 
 The problem now rises as how to coordinate the reads with the writes and with further ones? Should the client automatically try to reconnect? Should only the latest promise get the exception or should all promises receive it?
