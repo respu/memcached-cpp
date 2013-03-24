@@ -58,6 +58,11 @@ The problem now rises as how to coordinate the reads with the writes and with fu
 
 This needs some further research.
 
+### Conclusion
+I think the experiment worked out pretty well. Using the producer/consumer-queue approach the implementation can be kept pretty simple.
+The advantages come clear once a lot of preprocessing is needed together with additional I/O activity.
+The only disadvantage is that error handling might get more complicated.
+
 ### On the memcached side
 Lastly, I want to show which features the client supports out of the memcached feature set. As mentioned above, this was never meant to be a feature complete memcached-client implementation. C++ for web stuff is very rare anyway.
 
