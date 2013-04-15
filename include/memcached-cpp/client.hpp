@@ -25,8 +25,8 @@
 namespace memcachedcpp {
 
     template<typename Datatype, ip ip_type, protocol protocol_type, typename hasher>
-    class client_impl {
-    };
+    class client_impl;
+
  
     template<typename Datatype, typename hasher>
     class client_impl<Datatype, ip::tcp, protocol::plain, hasher> {
